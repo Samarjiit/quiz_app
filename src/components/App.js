@@ -8,6 +8,10 @@ import Question from './Question';
 import NextButton from './NextButton';
 import Progress from './Progress';
 import FinishScreen from './FinishScreen';
+import Footer from './Footer';
+import Timer from './Timer';
+
+const SEC_PER_QUESTION = 30;
 
 const initialState = {
   questions: [],
@@ -16,6 +20,7 @@ const initialState = {
   answer: null,
   points: 0,
   highscore: 0,
+  secondsRemaining: null,
 }; //index is used to get the first questions one by one and render once it updated
 function reducer(state, action) {
   switch (action.type) {
@@ -24,7 +29,11 @@ function reducer(state, action) {
     case 'dataFailed':
       return { ...state, status: 'error' };
     case 'start':
-      return { ...state, status: 'active' };
+      return {
+        ...state,
+        status: 'active',
+        secondsRemaining: state.questions.length * SEC_PER_QUESTION,
+      };
 
     case 'newAnswer':
       const question = state.questions.at(state.index);
@@ -48,13 +57,23 @@ function reducer(state, action) {
       };
     case 'restart':
       return { ...initialState, questions: state.questions, status: 'ready' };
+
+    case 'tick':
+      return {
+        ...state,
+        secondsRemaining: state.secondsRemaining - 1,
+        status: state.secondsRemaining === 0 ? 'finished' : state.status,
+      };
+
     default:
       throw new Error('action unknown');
   }
 }
 export default function App() {
-  const [{ questions, status, index, answer, points, highscore }, dispatch] =
-    useReducer(reducer, initialState);
+  const [
+    { questions, status, index, answer, points, highscore, secondsRemaining },
+    dispatch,
+  ] = useReducer(reducer, initialState);
   const numQuestions = questions.length;
   const maxPossiblePoints = questions.reduce(
     (prev, curr) => prev + curr.points,
@@ -89,12 +108,15 @@ export default function App() {
               dispatch={dispatch}
               answer={answer}
             />
-            <NextButton
-              dispatch={dispatch}
-              answer={answer}
-              numQuestions={numQuestions}
-              index={index}
-            />
+            <>
+              <Timer dispatch={dispatch} secondsRemaining={secondsRemaining} />
+              <NextButton
+                dispatch={dispatch}
+                answer={answer}
+                numQuestions={numQuestions}
+                index={index}
+              />
+            </>
           </>
         )}
         {status === 'finished' && (
@@ -109,3 +131,5 @@ export default function App() {
     </div>
   );
 }
+
+// features to add : allow user to select certain no of questions // filter difficulty //high score fetch
